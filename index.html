@@ -166,6 +166,10 @@
                 <p class="text-xs text-slate-500 mt-3 leading-relaxed">
                     * ពេល Host លើ GitHub អ្នកត្រូវប្រើ API Key ផ្ទាល់ខ្លួនដើម្បីទាញសំឡេង និងបកប្រែ។ <br>
                     អ្នកអាចបង្កើតវាបានដោយឥតគិតថ្លៃនៅ <a href="https://aistudio.google.com/app/apikey" target="_blank" class="text-indigo-600 underline font-bold hover:text-indigo-800">Google AI Studio</a>។
+                    <br><br>
+                    <span class="text-amber-600 font-bold bg-amber-50 p-2 rounded-lg block border border-amber-200">
+                        <i class="fas fa-exclamation-triangle"></i> ចំណាំ: API ឥតគិតថ្លៃមានកំណត់ទាញយកបាន 15ដង/នាទី។
+                    </span>
                 </p>
             </div>
         </div>
@@ -181,16 +185,16 @@
 
 <script>
     // --- Data & Settings Management ---
-    const STORAGE_KEY = 'jobInterviewConversationData_v8';
+    const STORAGE_KEY = 'jobInterviewConversationData_v10'; // Updated version to clear old cache
     const API_STORAGE_KEY = 'custom_gemini_api_key';
 
     const defaultConversationData = [
         { role: "老板 (ថៅកែ)", speaker: "boss", chinese: "你好，请坐。", pinyin: "Nǐ hǎo, qǐng zuò.", khmer: "សួស្តី សូមអង្គុយ។" },
         { role: "面试员 (បេក្ខជន)", speaker: "applicant", chinese: "谢谢老板。", pinyin: "Xièxiè lǎobǎn.", khmer: "អរគុណថៅកែ។" },
         { role: "老板 (ថៅកែ)", speaker: "boss", chinese: "你自己介绍一下", pinyin: "Nǐ zìjǐ jièshào yīxià", khmer: "សូមណែនាំខ្លួនអ្នកបន្តិចមើល។" },
-        { role: "面试员 (បេក្ខជន)", speaker: "applicant", chinese: "你好！我叫达罗， 今年我26岁了", pinyin: "Nǐ hǎo! Wǒ jiào Dáluó, jīnnián wǒ 26 suì le", khmer: "សួស្តី! ខ្ញុំឈ្មោះ ដារ៉ូ ឆ្នាំនេះខ្ញុំអាយុ 26 ឆ្នាំហើយ។" },
+        { role: "面试员 (បេក្ខជន)", speaker: "applicant", chinese: "你好！我叫 Daro， 今年我26岁了", pinyin: "Nǐ hǎo! Wǒ jiào Daro, jīnnián wǒ 26 suì le", khmer: "សួស្តី! ខ្ញុំឈ្មោះ ដារ៉ូ ឆ្នាំនេះខ្ញុំអាយុ 26 ឆ្នាំហើយ។" },
         { role: "老板 (ថៅកែ)", speaker: "boss", chinese: "你家在哪儿？", pinyin: "Nǐ jiā zài nǎ'er?", khmer: "តើផ្ទះអ្នកនៅឯណា?" },
-        { role: "面试员 (បេក្ខជន)", speaker: "applicant", chinese: "我家在1号路，靠近哥罗戈市场", pinyin: "Wǒ jiā zài 1 hào lù, kàojìn Gēluógē shìchǎng", khmer: "ផ្ទះខ្ញុំនៅផ្លូវជាតិលេខ1 នៅជិតផ្សារ \"ក្រោលគោ\"" },
+        { role: "面试员 (បេក្ខជន)", speaker: "applicant", chinese: "我家在1号路，靠近 Kraol Ko 市场", pinyin: "Wǒ jiā zài 1 hào lù, kàojìn Kraol Ko shìchǎng", khmer: "ផ្ទះខ្ញុំនៅផ្លូវជាតិលេខ1 នៅជិតផ្សារ \"ក្រោលគោ\"" },
         { role: "老板 (ថៅកែ)", speaker: "boss", chinese: "那！你以前做什么工作？", pinyin: "Nà! Nǐ yǐqián zuò shénme gōngzuò?", khmer: "ចុះ! ពីមុនអ្នកធ្វើការងារអ្វីដែរ?" },
         { role: "面试员 (បេក្ខជន)", speaker: "applicant", chinese: "我以前当会计文员的。", pinyin: "Wǒ yǐqián dāng kuàijì wényuán de.", khmer: "ពីមុនខ្ញុំធ្វើជាបុគ្គលិកគណនេយ្យ។" },
         { role: "老板 (ថៅកែ)", speaker: "boss", chinese: "你为什么辞去以前的工作？", pinyin: "Nǐ wèishéme cíqù yǐqián de gōngzuò?", khmer: "ហេតុអ្វីបានជាអ្នកឈប់ពីការងារចាស់?" },
@@ -312,7 +316,7 @@
         setTimeout(() => {
             toast.classList.add('opacity-0', 'translate-y-[-150%]');
             setTimeout(() => toast.remove(), 300);
-        }, 4000);
+        }, 4500);
     }
 
     function base64ToArrayBuffer(base64) {
@@ -350,7 +354,6 @@
     }
 
     async function generateTTSAudioUrl(text, speaker) {
-        // Retrieve custom key if available, otherwise defaults to ""
         const userApiKey = localStorage.getItem(API_STORAGE_KEY) || "";
         const apiKey = userApiKey || ""; 
         const voiceName = speaker === 'boss' ? 'Orus' : 'Fenrir'; 
@@ -378,6 +381,9 @@
                     body: JSON.stringify(payload)
                 });
                 if (!response.ok) {
+                    if(response.status === 429) {
+                        throw new Error("RATE_LIMIT_ERROR");
+                    }
                     if(response.status === 403 || response.status === 400) {
                         throw new Error("API_KEY_ERROR");
                     }
@@ -391,8 +397,8 @@
                 }
             } catch (error) {
                 lastError = error;
-                // If it's an API Key error, do not retry
-                if(error.message === "API_KEY_ERROR") break;
+                // បើខុស API Key ឬទាញយកញឹកពេក ឈប់ Retry នាំខាតពេល
+                if(error.message === "API_KEY_ERROR" || error.message === "RATE_LIMIT_ERROR") break;
                 if (i < 3) await new Promise(r => setTimeout(r, delays[i]));
             }
         }
@@ -425,19 +431,7 @@
         return item.audioPromise;
     }
 
-    async function preloadAudioInBackground() {
-        for (let i = 0; i < conversationData.length; i++) {
-            try {
-                await getAudioUrl(i);
-                await new Promise(r => setTimeout(r, 600)); 
-            } catch (e) {
-                console.warn(`Preloading failed for item ${i}`);
-                if (e.message === "API_KEY_ERROR") {
-                    break; // Stop preloading if API key is invalid to save requests
-                }
-            }
-        }
-    }
+    // លុបមុខងារ preloadAudioInBackground() ចេញ ដើម្បីកុំអោយទាញយកស្វ័យប្រវត្តិបង្កជា Error 429
 
     async function playConversationItem(index) {
         const item = conversationData[index];
@@ -494,7 +488,9 @@
             msgBubble.classList.remove('ring-4', 'ring-indigo-400/50', 'scale-[1.02]', 'z-20', 'shadow-2xl');
             
             if (error.message === "API_KEY_ERROR") {
-                if(!isPlayingAll) showToast("បញ្ហា API Key!<br><span class='text-sm font-normal'>សូមបញ្ចូល Gemini API Key របស់អ្នកនៅក្នុងការកំណត់ ⚙️ ដើម្បីដំណើរការលើ GitHub។</span>", "error");
+                if(!isPlayingAll) showToast("បញ្ហា API Key!<br><span class='text-sm font-normal'>សូមពិនិត្យមើល API Key របស់អ្នកនៅក្នុងការកំណត់ ⚙️។</span>", "error");
+            } else if (error.message === "RATE_LIMIT_ERROR") {
+                if(!isPlayingAll) showToast("ជាប់កម្រិត API (Rate Limit)!<br><span class='text-sm font-normal'>API ឥតគិតថ្លៃមានកំណត់ (15ដង/នាទី)។ សូមរង់ចាំ 1នាទី សឹមចុចស្តាប់ម្តងទៀត។</span>", "error");
             } else {
                 if(!isPlayingAll) showToast("សុំទោស មានបញ្ហាក្នុងការទាញយកសំឡេង សូមព្យាយាមម្តងទៀត។", "error");
             }
@@ -520,7 +516,7 @@
         for (let i = 0; i < conversationData.length; i++) {
             if (shouldStopAll) break;
             const success = await playConversationItem(i);
-            // ប្រសិនបើ Error ដោយសារ API_KEY ឈប់លេងទាំងអស់តែម្តង
+            // បញ្ឈប់ Play All ភ្លាមៗ បើមានបញ្ហា Error 429 ឬ 403
             if (success === false && !shouldStopAll) {
                 break;
             }
@@ -722,6 +718,9 @@
             });
 
             if(!response.ok) {
+                if(response.status === 429) {
+                    throw new Error("RATE_LIMIT_ERROR");
+                }
                 if(response.status === 403 || response.status === 400) {
                     throw new Error("API_KEY_ERROR");
                 }
@@ -749,6 +748,8 @@
             
             if(e.message === "API_KEY_ERROR") {
                 if(!isAutoTyping) showToast("បញ្ហា API Key! សូមបញ្ចូល API Key របស់អ្នកនៅក្នុងការកំណត់ ⚙️", "error");
+            } else if (e.message === "RATE_LIMIT_ERROR") {
+                if(!isAutoTyping) showToast("ជាប់កម្រិត API (Rate Limit)!<br><span class='text-sm font-normal'>សូមរង់ចាំ 1នាទី សឹមសាកល្បងបកប្រែម្តងទៀត។</span>", "error");
             } else {
                 if(!isAutoTyping) alert("សូមអភ័យទោស មានបញ្ហាក្នុងការបកប្រែ សូមព្យាយាមម្តងទៀត។");
             }
@@ -867,7 +868,7 @@
         loadData();
         renderConversation();
 
-        setTimeout(() => { preloadAudioInBackground(); }, 1000);
+        // ដកចេញការហៅ preloadAudioInBackground()
 
         let typingTimer;
         const doneTypingInterval = 1000; 
