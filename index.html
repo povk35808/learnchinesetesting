@@ -168,7 +168,7 @@
                     អ្នកអាចបង្កើតវាបានដោយឥតគិតថ្លៃនៅ <a href="https://aistudio.google.com/app/apikey" target="_blank" class="text-indigo-600 underline font-bold hover:text-indigo-800">Google AI Studio</a>។
                     <br><br>
                     <span class="text-amber-600 font-bold bg-amber-50 p-2 rounded-lg block border border-amber-200">
-                        <i class="fas fa-exclamation-triangle"></i> ចំណាំ: API ឥតគិតថ្លៃមានកំណត់ទាញយកបាន 15ដង/នាទី។
+                        <i class="fas fa-check-circle"></i> Update ថ្មី: បើ API អស់កូតា (15ដង/នាទី) កម្មវិធីនឹងប្តូរទៅប្រើសំឡេង Offline របស់ Browser ដោយស្វ័យប្រវត្តិ។
                     </span>
                 </p>
             </div>
@@ -185,7 +185,7 @@
 
 <script>
     // --- Data & Settings Management ---
-    const STORAGE_KEY = 'jobInterviewConversationData_v10'; // Updated version to clear old cache
+    const STORAGE_KEY = 'jobInterviewConversationData_v11';
     const API_STORAGE_KEY = 'custom_gemini_api_key';
 
     const defaultConversationData = [
@@ -226,6 +226,12 @@
     ];
 
     let conversationData = [];
+
+    // Preload Browser Voices
+    let browserVoices = [];
+    window.speechSynthesis.onvoiceschanged = () => {
+        browserVoices = window.speechSynthesis.getVoices();
+    };
 
     function loadData() {
         const stored = localStorage.getItem(STORAGE_KEY);
@@ -290,7 +296,6 @@
         localStorage.setItem(API_STORAGE_KEY, key);
         closeSettingsModal();
         showToast("បានរក្សាទុក API Key!", "success");
-        // Clear cached audio so it attempts to fetch again
         conversationData.forEach(item => { item.audioPromise = null; });
     }
 
@@ -299,6 +304,7 @@
     let isPlayingAll = false;
     let shouldStopAll = false;
     let isSlowMode = false;
+    let hasShownFallbackToast = false; // Prevent spamming toast messages
 
     function showToast(message, type = "error") {
         const toast = document.createElement('div');
@@ -369,11 +375,11 @@
             model: "gemini-2.5-flash-preview-tts"
         };
 
-        const delays = [1000, 2000, 4000, 8000];
+        const delays = [1000, 2000, 4000];
         let result = null;
         let lastError = null;
 
-        for (let i = 0; i < 4; i++) {
+        for (let i = 0; i < 3; i++) {
             try {
                 const response = await fetch(apiUrl, {
                     method: 'POST',
@@ -381,12 +387,8 @@
                     body: JSON.stringify(payload)
                 });
                 if (!response.ok) {
-                    if(response.status === 429) {
-                        throw new Error("RATE_LIMIT_ERROR");
-                    }
-                    if(response.status === 403 || response.status === 400) {
-                        throw new Error("API_KEY_ERROR");
-                    }
+                    if(response.status === 429) throw new Error("RATE_LIMIT_ERROR");
+                    if(response.status === 403 || response.status === 400) throw new Error("API_KEY_ERROR");
                     throw new Error(`HTTP error! status: ${response.status}`);
                 }
                 const json = await response.json();
@@ -397,9 +399,8 @@
                 }
             } catch (error) {
                 lastError = error;
-                // បើខុស API Key ឬទាញយកញឹកពេក ឈប់ Retry នាំខាតពេល
                 if(error.message === "API_KEY_ERROR" || error.message === "RATE_LIMIT_ERROR") break;
-                if (i < 3) await new Promise(r => setTimeout(r, delays[i]));
+                if (i < 2) await new Promise(r => setTimeout(r, delays[i]));
             }
         }
 
@@ -431,7 +432,30 @@
         return item.audioPromise;
     }
 
-    // លុបមុខងារ preloadAudioInBackground() ចេញ ដើម្បីកុំអោយទាញយកស្វ័យប្រវត្តិបង្កជា Error 429
+    // --- BROWSER OFFLINE TTS FALLBACK ---
+    function playWithBrowserTTS(text) {
+        return new Promise((resolve) => {
+            if (!('speechSynthesis' in window)) {
+                resolve(false);
+                return;
+            }
+            
+            window.speechSynthesis.cancel(); // Stop anything currently playing
+            
+            const utterance = new SpeechSynthesisUtterance(text);
+            utterance.lang = 'zh-CN'; 
+            utterance.rate = isSlowMode ? 0.75 : 1.0;
+            
+            const voices = window.speechSynthesis.getVoices();
+            const zhVoice = voices.find(v => v.lang === 'zh-CN' || v.lang === 'zh_CN' || v.lang.includes('zh'));
+            if (zhVoice) utterance.voice = zhVoice;
+            
+            utterance.onend = () => resolve(true);
+            utterance.onerror = () => resolve(false);
+            
+            window.speechSynthesis.speak(utterance);
+        });
+    }
 
     async function playConversationItem(index) {
         const item = conversationData[index];
@@ -447,6 +471,7 @@
             globalAudio.pause();
             globalAudio.currentTime = 0;
         }
+        window.speechSynthesis.cancel(); // Stop fallback audio if running
 
         document.querySelectorAll('.message-card').forEach(el => {
             el.classList.remove('ring-4', 'ring-indigo-400/50', 'scale-[1.02]', 'z-20', 'shadow-2xl');
@@ -483,18 +508,27 @@
                 globalAudio.play().catch(e => resolve(false));
             });
         } catch (error) {
-            iconElement.className = originalIconClass;
-            if(textElement) textElement.innerText = "ស្តាប់";
-            msgBubble.classList.remove('ring-4', 'ring-indigo-400/50', 'scale-[1.02]', 'z-20', 'shadow-2xl');
-            
-            if (error.message === "API_KEY_ERROR") {
-                if(!isPlayingAll) showToast("បញ្ហា API Key!<br><span class='text-sm font-normal'>សូមពិនិត្យមើល API Key របស់អ្នកនៅក្នុងការកំណត់ ⚙️។</span>", "error");
-            } else if (error.message === "RATE_LIMIT_ERROR") {
-                if(!isPlayingAll) showToast("ជាប់កម្រិត API (Rate Limit)!<br><span class='text-sm font-normal'>API ឥតគិតថ្លៃមានកំណត់ (15ដង/នាទី)។ សូមរង់ចាំ 1នាទី សឹមចុចស្តាប់ម្តងទៀត។</span>", "error");
-            } else {
-                if(!isPlayingAll) showToast("សុំទោស មានបញ្ហាក្នុងការទាញយកសំឡេង សូមព្យាយាមម្តងទៀត។", "error");
+            // --- SMART FALLBACK TRIGGERED ---
+            if (shouldStopAll && isPlayingAll) return false;
+
+            // Show Toast once per "Play All" session
+            if (!hasShownFallbackToast && (error.message === "RATE_LIMIT_ERROR" || error.message === "API_KEY_ERROR")) {
+                showToast("ប្តូរទៅប្រព័ន្ធសំឡេង Offline ស្វ័យប្រវត្តិ ដោយសារបញ្ហា API ឬអស់កូតា (15ដង/នាទី)។", "info");
+                hasShownFallbackToast = true; 
             }
-            return false;
+
+            iconElement.className = 'fas fa-volume-up text-amber-500 animate-pulse'; // Amber color for fallback
+            if(textElement) textElement.innerText = "អាន(ជំនួស)";
+
+            // Return promise for offline TTS
+            return new Promise((resolve) => {
+                playWithBrowserTTS(item.chinese).then((success) => {
+                    iconElement.className = originalIconClass;
+                    if(textElement) textElement.innerText = "ស្តាប់";
+                    msgBubble.classList.remove('ring-4', 'ring-indigo-400/50', 'scale-[1.02]', 'z-20', 'shadow-2xl');
+                    resolve(success);
+                });
+            });
         }
     }
 
@@ -504,7 +538,10 @@
     }
 
     async function startPlayAll() {
-        isPlayingAll = true; shouldStopAll = false;
+        isPlayingAll = true; 
+        shouldStopAll = false;
+        hasShownFallbackToast = false; // Reset fallback toast state
+        
         const btn = document.getElementById('playAllBtn');
         btn.classList.replace('from-indigo-600', 'from-red-500');
         btn.classList.replace('to-blue-600', 'to-red-600');
@@ -516,19 +553,20 @@
         for (let i = 0; i < conversationData.length; i++) {
             if (shouldStopAll) break;
             const success = await playConversationItem(i);
-            // បញ្ឈប់ Play All ភ្លាមៗ បើមានបញ្ហា Error 429 ឬ 403
-            if (success === false && !shouldStopAll) {
-                break;
-            }
+            
             if (shouldStopAll) break;
+            // Delay តិចជាងមុននៅពេលប្តូរមកសំឡេងជំនួស
             await new Promise(res => setTimeout(res, 800));
         }
         stopPlayAll();
     }
 
     function stopPlayAll() {
-        isPlayingAll = false; shouldStopAll = true;
+        isPlayingAll = false; 
+        shouldStopAll = true;
+        
         if (globalAudio) globalAudio.pause();
+        window.speechSynthesis.cancel(); // Stop browser TTS too
         
         document.querySelectorAll('.message-card').forEach(el => el.classList.remove('ring-4', 'ring-indigo-400/50', 'scale-[1.02]', 'z-20', 'shadow-2xl'));
         renderConversation(); 
@@ -867,8 +905,6 @@
     document.addEventListener('DOMContentLoaded', () => {
         loadData();
         renderConversation();
-
-        // ដកចេញការហៅ preloadAudioInBackground()
 
         let typingTimer;
         const doneTypingInterval = 1000; 
