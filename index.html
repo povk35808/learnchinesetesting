@@ -55,6 +55,9 @@
             <button onclick="resetToDefault()" class="bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 px-6 md:px-8 py-3 rounded-2xl shadow-sm flex items-center gap-2 text-sm md:text-base font-bold transition-all hover:border-slate-300 transform hover:-translate-y-1">
                 <i class="fas fa-history text-lg"></i> ត្រឡប់ទៅទិន្នន័យដើម
             </button>
+            <button onclick="openSettingsModal()" class="bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 px-4 md:px-5 py-3 rounded-2xl shadow-sm flex items-center gap-2 text-sm md:text-base font-bold transition-all hover:border-slate-300 transform hover:-translate-y-1" title="ការកំណត់ API Key">
+                <i class="fas fa-cog text-lg"></i> <span class="hidden md:inline">ការកំណត់</span>
+            </button>
         </div>
     </header>
 
@@ -144,9 +147,42 @@
     </div>
 </div>
 
+<!-- Settings Modal -->
+<div id="settingsModal" class="fixed inset-0 modal-bg hidden z-[60] flex items-center justify-center p-4 opacity-0 transition-opacity duration-300">
+    <div class="bg-white rounded-3xl shadow-2xl w-full max-w-md overflow-hidden transform scale-95 transition-transform duration-300 border border-slate-100" id="settingsModalContent">
+        <div class="bg-slate-50/80 border-b border-slate-200 px-6 py-5 flex justify-between items-center backdrop-blur-sm">
+            <h3 class="text-xl font-extrabold text-slate-800 flex items-center gap-2">
+                <i class="fas fa-cog text-slate-500"></i> ការកំណត់ (Settings)
+            </h3>
+            <button onclick="closeSettingsModal()" class="text-slate-400 hover:text-slate-700 transition-colors bg-white hover:bg-slate-200 rounded-full w-8 h-8 flex items-center justify-center shadow-sm">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+        
+        <div class="p-6 space-y-4">
+            <div>
+                <label class="block text-sm font-bold text-slate-700 mb-2">Gemini API Key របស់អ្នក</label>
+                <input type="password" id="inputApiKey" placeholder="បិទភ្ជាប់ API Key នៅទីនេះ..." class="w-full border border-slate-300 rounded-xl shadow-sm p-3 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 text-sm placeholder-slate-400 transition-colors">
+                <p class="text-xs text-slate-500 mt-3 leading-relaxed">
+                    * ពេល Host លើ GitHub អ្នកត្រូវប្រើ API Key ផ្ទាល់ខ្លួនដើម្បីទាញសំឡេង និងបកប្រែ។ <br>
+                    អ្នកអាចបង្កើតវាបានដោយឥតគិតថ្លៃនៅ <a href="https://aistudio.google.com/app/apikey" target="_blank" class="text-indigo-600 underline font-bold hover:text-indigo-800">Google AI Studio</a>។
+                </p>
+            </div>
+        </div>
+        
+        <div class="bg-slate-50/80 border-t border-slate-200 px-6 py-5 flex justify-end gap-3 rounded-b-3xl backdrop-blur-sm">
+            <button onclick="closeSettingsModal()" class="bg-white border border-slate-300 text-slate-700 hover:bg-slate-100 px-5 py-2 rounded-xl font-bold transition-colors shadow-sm text-sm">បោះបង់</button>
+            <button onclick="saveApiKey()" class="bg-slate-800 hover:bg-slate-900 text-white px-6 py-2 rounded-xl font-bold transition-colors flex items-center gap-2 shadow-md text-sm">
+                <i class="fas fa-save"></i> រក្សាទុក
+            </button>
+        </div>
+    </div>
+</div>
+
 <script>
-    // --- Data Management ---
+    // --- Data & Settings Management ---
     const STORAGE_KEY = 'jobInterviewConversationData_v8';
+    const API_STORAGE_KEY = 'custom_gemini_api_key';
 
     const defaultConversationData = [
         { role: "老板 (ថៅកែ)", speaker: "boss", chinese: "你好，请坐。", pinyin: "Nǐ hǎo, qǐng zuò.", khmer: "សួស្តី សូមអង្គុយ។" },
@@ -219,6 +255,41 @@
         }
     }
 
+    // --- Settings Modal Functions ---
+    function openSettingsModal() {
+        const modal = document.getElementById('settingsModal');
+        const content = document.getElementById('settingsModalContent');
+        const input = document.getElementById('inputApiKey');
+        
+        input.value = localStorage.getItem(API_STORAGE_KEY) || "";
+        
+        modal.classList.remove('hidden');
+        void modal.offsetWidth; 
+        modal.classList.remove('opacity-0');
+        content.classList.remove('scale-95');
+    }
+
+    function closeSettingsModal() {
+        const modal = document.getElementById('settingsModal');
+        const content = document.getElementById('settingsModalContent');
+        
+        modal.classList.add('opacity-0');
+        content.classList.add('scale-95');
+        
+        setTimeout(() => {
+            modal.classList.add('hidden');
+        }, 300);
+    }
+
+    function saveApiKey() {
+        const key = document.getElementById('inputApiKey').value.trim();
+        localStorage.setItem(API_STORAGE_KEY, key);
+        closeSettingsModal();
+        showToast("បានរក្សាទុក API Key!", "success");
+        // Clear cached audio so it attempts to fetch again
+        conversationData.forEach(item => { item.audioPromise = null; });
+    }
+
     // --- Audio Variables & State ---
     let globalAudio = null;
     let isPlayingAll = false;
@@ -234,14 +305,14 @@
         if(type === 'success') icon = "fa-check-circle";
         if(type === 'error') icon = "fa-exclamation-triangle";
 
-        toast.innerHTML = `<i class="fas ${icon} text-2xl"></i> ${message}`;
+        toast.innerHTML = `<i class="fas ${icon} text-2xl"></i> <span style="line-height: 1.5;">${message}</span>`;
         document.body.appendChild(toast);
         
         setTimeout(() => { toast.classList.remove('translate-y-[-150%]', 'opacity-0'); }, 10);
         setTimeout(() => {
             toast.classList.add('opacity-0', 'translate-y-[-150%]');
             setTimeout(() => toast.remove(), 300);
-        }, 3000);
+        }, 4000);
     }
 
     function base64ToArrayBuffer(base64) {
@@ -279,7 +350,9 @@
     }
 
     async function generateTTSAudioUrl(text, speaker) {
-        const apiKey = ""; 
+        // Retrieve custom key if available, otherwise defaults to ""
+        const userApiKey = localStorage.getItem(API_STORAGE_KEY) || "";
+        const apiKey = userApiKey || ""; 
         const voiceName = speaker === 'boss' ? 'Orus' : 'Fenrir'; 
         const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-tts:generateContent?key=${apiKey}`;
         const promptText = `Speak this Chinese text clearly and naturally: ${text}`;
@@ -304,7 +377,12 @@
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(payload)
                 });
-                if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+                if (!response.ok) {
+                    if(response.status === 403 || response.status === 400) {
+                        throw new Error("API_KEY_ERROR");
+                    }
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
                 const json = await response.json();
                 if (json?.candidates?.[0]?.content?.parts?.some(p => p.inlineData && p.inlineData.data)) {
                     result = json; break;
@@ -313,6 +391,8 @@
                 }
             } catch (error) {
                 lastError = error;
+                // If it's an API Key error, do not retry
+                if(error.message === "API_KEY_ERROR") break;
                 if (i < 3) await new Promise(r => setTimeout(r, delays[i]));
             }
         }
@@ -352,6 +432,9 @@
                 await new Promise(r => setTimeout(r, 600)); 
             } catch (e) {
                 console.warn(`Preloading failed for item ${i}`);
+                if (e.message === "API_KEY_ERROR") {
+                    break; // Stop preloading if API key is invalid to save requests
+                }
             }
         }
     }
@@ -409,7 +492,12 @@
             iconElement.className = originalIconClass;
             if(textElement) textElement.innerText = "ស្តាប់";
             msgBubble.classList.remove('ring-4', 'ring-indigo-400/50', 'scale-[1.02]', 'z-20', 'shadow-2xl');
-            if(!isPlayingAll) showToast("សុំទោស មានបញ្ហាក្នុងការទាញយកសំឡេង សូមព្យាយាមម្តងទៀត។", "error");
+            
+            if (error.message === "API_KEY_ERROR") {
+                if(!isPlayingAll) showToast("បញ្ហា API Key!<br><span class='text-sm font-normal'>សូមបញ្ចូល Gemini API Key របស់អ្នកនៅក្នុងការកំណត់ ⚙️ ដើម្បីដំណើរការលើ GitHub។</span>", "error");
+            } else {
+                if(!isPlayingAll) showToast("សុំទោស មានបញ្ហាក្នុងការទាញយកសំឡេង សូមព្យាយាមម្តងទៀត។", "error");
+            }
             return false;
         }
     }
@@ -431,7 +519,11 @@
 
         for (let i = 0; i < conversationData.length; i++) {
             if (shouldStopAll) break;
-            await playConversationItem(i);
+            const success = await playConversationItem(i);
+            // ប្រសិនបើ Error ដោយសារ API_KEY ឈប់លេងទាំងអស់តែម្តង
+            if (success === false && !shouldStopAll) {
+                break;
+            }
             if (shouldStopAll) break;
             await new Promise(res => setTimeout(res, 800));
         }
@@ -595,7 +687,8 @@
 
         if(statusSpan) statusSpan.innerHTML = '<i class="fas fa-spinner fa-spin text-indigo-500"></i> <span class="text-indigo-600">កំពុងបកប្រែ...</span>';
 
-        const apiKey = ""; 
+        const userApiKey = localStorage.getItem(API_STORAGE_KEY) || "";
+        const apiKey = userApiKey || ""; 
         const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${apiKey}`;
         
         let prompt = `You are a helpful translation assistant. `;
@@ -628,7 +721,12 @@
                 body: JSON.stringify(payload)
             });
 
-            if(!response.ok) throw new Error("API Error");
+            if(!response.ok) {
+                if(response.status === 403 || response.status === 400) {
+                    throw new Error("API_KEY_ERROR");
+                }
+                throw new Error("API Error");
+            }
             
             const result = await response.json();
             const jsonText = result.candidates[0].content.parts[0].text;
@@ -648,7 +746,12 @@
         } catch(e) {
             console.error(e);
             if(statusSpan) statusSpan.innerHTML = '<i class="fas fa-exclamation-triangle text-red-500"></i> <span class="text-red-500">បរាជ័យ</span>';
-            if(!isAutoTyping) alert("សូមអភ័យទោស មានបញ្ហាក្នុងការបកប្រែ សូមព្យាយាមម្តងទៀត។");
+            
+            if(e.message === "API_KEY_ERROR") {
+                if(!isAutoTyping) showToast("បញ្ហា API Key! សូមបញ្ចូល API Key របស់អ្នកនៅក្នុងការកំណត់ ⚙️", "error");
+            } else {
+                if(!isAutoTyping) alert("សូមអភ័យទោស មានបញ្ហាក្នុងការបកប្រែ សូមព្យាយាមម្តងទៀត។");
+            }
         } finally {
             if(!isAutoTyping) {
                 btnKh.innerHTML = '<i class="fas fa-language"></i> ខ្មែរ <i class="fas fa-arrow-right text-[10px] text-indigo-400"></i> ចិន';
