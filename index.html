@@ -1,0 +1,806 @@
+<!DOCTYPE html>
+<html lang="km">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ការសន្ទនាសម្ភាសន៍ការងារ (Job Interview Conversation)</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Noto+Sans+Khmer:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        body {
+            font-family: 'Inter', 'Noto Sans Khmer', sans-serif;
+            background-color: #f8fafc; /* Slate-50 */
+            background-image: radial-gradient(#e2e8f0 1px, transparent 1px);
+            background-size: 20px 20px;
+        }
+        .conversation-container {
+            max-width: 860px;
+            margin: 0 auto;
+            padding-bottom: 120px; /* Space for FAB */
+        }
+        /* Glassmorphism background for main container */
+        .glass-panel {
+            background: rgba(255, 255, 255, 0.85);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.5);
+        }
+        /* Modal Backdrop */
+        .modal-bg {
+            background-color: rgba(15, 23, 42, 0.6); /* slate-900 with opacity */
+            backdrop-filter: blur(4px);
+        }
+    </style>
+</head>
+<body class="p-4 md:p-8">
+
+<div class="conversation-container glass-panel rounded-[2rem] shadow-2xl p-4 md:p-10 border border-white">
+    
+    <!-- Top Header & Controls -->
+    <header class="text-center mb-10 pb-8 border-b border-gray-200/70 relative">
+        <div class="inline-block bg-blue-50 text-blue-600 px-4 py-1.5 rounded-full text-sm font-bold mb-4 border border-blue-100 shadow-sm">
+            <i class="fas fa-briefcase mr-2"></i> មេរៀនសន្ទនា
+        </div>
+        <h1 class="text-3xl md:text-4xl font-extrabold text-slate-800 mb-3 tracking-tight">ការសន្ទនាសម្ភាសន៍ការងារ</h1>
+        <h2 class="text-lg md:text-xl text-slate-500 font-medium mb-6 tracking-wide">(Job Interview Conversation)</h2>
+        
+        <div class="flex flex-wrap justify-center gap-3">
+            <button onclick="openModal(-1)" class="bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-600 hover:to-teal-600 text-white px-5 py-2.5 rounded-xl shadow-lg shadow-emerald-500/30 flex items-center gap-2 text-sm font-semibold transition-all transform hover:-translate-y-0.5">
+                <i class="fas fa-plus-circle text-lg"></i> បន្ថែមប្រយោគថ្មី
+            </button>
+            <button onclick="resetToDefault()" class="bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 px-5 py-2.5 rounded-xl shadow-sm flex items-center gap-2 text-sm font-semibold transition-all hover:border-slate-300">
+                <i class="fas fa-history"></i> ត្រឡប់ទៅទិន្នន័យដើម
+            </button>
+        </div>
+    </header>
+
+    <div id="conversation-list" class="space-y-8">
+        <!-- Conversation items will be generated here by JavaScript -->
+    </div>
+</div>
+
+<!-- Floating Action Buttons (Bottom Right) -->
+<div class="fixed bottom-6 right-6 md:bottom-10 md:right-10 flex flex-col gap-4 z-40 items-end">
+    <button id="slowModeToggleBtn" onclick="toggleSlowMode()" class="bg-white text-indigo-600 border border-indigo-100 shadow-[0_8px_20px_rgba(0,0,0,0.1)] rounded-full w-14 h-14 md:w-auto md:h-auto md:px-6 md:py-3.5 flex items-center justify-center gap-2.5 hover:bg-indigo-50 transition-all transform hover:scale-105">
+        <i class="fas fa-snail text-2xl md:text-xl"></i>
+        <span class="hidden md:inline font-bold" id="slowModeText">ល្បឿនធម្មតា</span>
+    </button>
+    <button id="playAllBtn" onclick="togglePlayAll()" class="bg-gradient-to-r from-indigo-600 to-blue-600 text-white shadow-[0_8px_20px_rgba(79,70,229,0.3)] rounded-full w-16 h-16 md:w-auto md:h-auto md:px-8 md:py-4 flex items-center justify-center gap-3 hover:from-indigo-700 hover:to-blue-700 transition-all transform hover:scale-105 border border-indigo-500/30">
+        <i class="fas fa-play text-2xl ml-1 md:ml-0"></i>
+        <span class="hidden md:inline font-extrabold text-lg tracking-wide" id="playAllText">ស្តាប់ពីដើមដល់ចប់</span>
+    </button>
+</div>
+
+<!-- Edit/Add Modal -->
+<div id="editModal" class="fixed inset-0 modal-bg hidden z-50 flex items-center justify-center p-4 opacity-0 transition-opacity duration-300">
+    <div class="bg-white rounded-2xl shadow-2xl w-full max-w-xl overflow-hidden transform scale-95 transition-transform duration-300 border border-slate-100" id="modalContent">
+        <div class="bg-slate-50 border-b border-slate-200 px-6 py-5 flex justify-between items-center">
+            <h3 class="text-xl font-extrabold text-slate-800 flex items-center gap-2" id="modalTitle">
+                <i class="fas fa-edit text-indigo-500"></i> កែប្រែប្រយោគ
+            </h3>
+            <button onclick="closeModal()" class="text-slate-400 hover:text-slate-700 transition-colors bg-white hover:bg-slate-200 rounded-full w-8 h-8 flex items-center justify-center">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+        
+        <div class="p-6 space-y-5">
+            <input type="hidden" id="editIndex" value="-1">
+            
+            <div>
+                <label class="block text-sm font-bold text-slate-700 mb-1.5">អ្នកនិយាយ</label>
+                <select id="inputSpeaker" class="w-full border border-slate-300 rounded-xl shadow-sm p-3 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 font-medium text-slate-700 bg-slate-50">
+                    <option value="boss">老板 (ថៅកែ)</option>
+                    <option value="applicant">面试员 (បេក្ខជន)</option>
+                </select>
+            </div>
+
+            <!-- Auto Translate Section -->
+            <div class="bg-indigo-50/50 border border-indigo-100 rounded-xl p-4 space-y-3">
+                <div class="flex justify-between items-center mb-2">
+                    <p class="text-xs text-indigo-700 font-bold uppercase tracking-wider"><i class="fas fa-magic"></i> បកប្រែស្វ័យប្រវត្តិដោយ AI</p>
+                    <span id="autoTranslateStatus" class="text-xs font-bold flex items-center gap-1"></span>
+                </div>
+                
+                <div class="flex gap-3">
+                    <button onclick="autoFill('kh')" class="flex-1 bg-white border border-indigo-200 text-indigo-600 hover:bg-indigo-50 hover:border-indigo-300 py-2.5 rounded-lg text-sm font-bold transition-all shadow-sm" title="ចុចបកប្រែដោយដៃ">
+                        <i class="fas fa-language mr-1"></i> ខ្មែរ ➡️ ចិន
+                    </button>
+                    <button onclick="autoFill('zh')" class="flex-1 bg-white border border-indigo-200 text-indigo-600 hover:bg-indigo-50 hover:border-indigo-300 py-2.5 rounded-lg text-sm font-bold transition-all shadow-sm" title="ចុចបកប្រែដោយដៃ">
+                        <i class="fas fa-language mr-1"></i> ចិន ➡️ ខ្មែរ
+                    </button>
+                </div>
+            </div>
+
+            <div>
+                <label class="block text-sm font-bold text-slate-700 mb-1.5">ភាសាខ្មែរ (Khmer)</label>
+                <textarea id="inputKhmer" rows="2" class="w-full border border-slate-300 rounded-xl shadow-sm p-3 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 text-base placeholder-slate-400"></textarea>
+            </div>
+
+            <div>
+                <label class="block text-sm font-bold text-slate-700 mb-1.5">អក្សរចិន (Chinese)</label>
+                <textarea id="inputChinese" rows="2" class="w-full border border-slate-300 rounded-xl shadow-sm p-3 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 text-lg placeholder-slate-400"></textarea>
+            </div>
+
+            <div>
+                <label class="block text-sm font-bold text-slate-700 mb-1.5">ភីនអ៊ីន (Pinyin)</label>
+                <input type="text" id="inputPinyin" class="w-full border border-slate-300 rounded-xl shadow-sm p-3 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 font-mono text-sm placeholder-slate-400">
+            </div>
+
+        </div>
+        
+        <div class="bg-slate-50 border-t border-slate-200 px-6 py-4 flex justify-end gap-3 rounded-b-2xl">
+            <button onclick="closeModal()" class="bg-white border border-slate-300 text-slate-700 hover:bg-slate-100 px-5 py-2.5 rounded-xl font-bold transition-colors shadow-sm">បោះបង់</button>
+            <button onclick="saveModal()" class="bg-indigo-600 hover:bg-indigo-700 text-white px-6 py-2.5 rounded-xl font-bold transition-colors flex items-center gap-2 shadow-lg shadow-indigo-500/30" id="saveBtn">
+                <i class="fas fa-save"></i> រក្សាទុក
+            </button>
+        </div>
+    </div>
+</div>
+
+<script>
+    // --- Data Management (Local Storage & Defaults) ---
+    const STORAGE_KEY = 'jobInterviewConversationData_v6';
+
+    const defaultConversationData = [
+        { role: "老板 (ថៅកែ)", speaker: "boss", chinese: "你好，请坐。", pinyin: "Nǐ hǎo, qǐng zuò.", khmer: "សួស្តី សូមអង្គុយ។" },
+        { role: "面试员 (បេក្ខជន)", speaker: "applicant", chinese: "谢谢老板。", pinyin: "Xièxiè lǎobǎn.", khmer: "អរគុណថៅកែ។" },
+        { role: "老板 (ថៅកែ)", speaker: "boss", chinese: "你自己介绍一下", pinyin: "Nǐ zìjǐ jièshào yīxià", khmer: "សូមណែនាំខ្លួនអ្នកបន្តិចមើល។" },
+        { role: "面试员 (បេក្ខជន)", speaker: "applicant", chinese: "你好！我叫达罗， 今年我26岁了", pinyin: "Nǐ hǎo! Wǒ jiào Dáluó, jīnnián wǒ 26 suì le", khmer: "សួស្តី! ខ្ញុំឈ្មោះ ដារ៉ូ ឆ្នាំនេះខ្ញុំអាយុ 26 ឆ្នាំហើយ។" },
+        { role: "老板 (ថៅកែ)", speaker: "boss", chinese: "你家在哪儿？", pinyin: "Nǐ jiā zài nǎ'er?", khmer: "តើផ្ទះអ្នកនៅឯណា?" },
+        { role: "面试员 (បេក្ខជន)", speaker: "applicant", chinese: "我家在1号路，靠近哥罗戈市场", pinyin: "Wǒ jiā zài 1 hào lù, kàojìn Gēluógē shìchǎng", khmer: "ផ្ទះខ្ញុំនៅផ្លូវជាតិលេខ1 នៅជិតផ្សារ \"ក្រោលគោ\"" },
+        { role: "老板 (ថៅកែ)", speaker: "boss", chinese: "那！你以前做什么工作？", pinyin: "Nà! Nǐ yǐqián zuò shénme gōngzuò?", khmer: "ចុះ! ពីមុនអ្នកធ្វើការងារអ្វីដែរ?" },
+        { role: "面试员 (បេក្ខជន)", speaker: "applicant", chinese: "我以前当会计文员的。", pinyin: "Wǒ yǐqián dāng kuàijì wényuán de.", khmer: "ពីមុនខ្ញុំធ្វើជាបុគ្គលិកគណនេយ្យ។" },
+        { role: "老板 (ថៅកែ)", speaker: "boss", chinese: "你为什么辞去以前的工作？", pinyin: "Nǐ wèishéme cíqù yǐqián de gōngzuò?", khmer: "ហេតុអ្វីបានជាអ្នកឈប់ពីការងារចាស់?" },
+        { role: "面试员 (បេក្ខជន)", speaker: "applicant", chinese: "因为我想找一个更好的发展机会。", pinyin: "Yīnwèi wǒ xiǎng zhǎo yīgè gèng hǎo de fāzhǎn jīhuì.", khmer: "ពីព្រោះខ្ញុំចង់ស្វែងរកឱកាសអភិវឌ្ឍន៍ដែលល្អជាងមុន។" },
+        { role: "老板 (ថៅកែ)", speaker: "boss", chinese: "你结婚了吗？", pinyin: "Nǐ jiéhūnle ma?", khmer: "តើអ្នករៀបការហើយឬនៅ?" },
+        { role: "面试员 (បេក្ខជន)", speaker: "applicant", chinese: "我单身的", pinyin: "Wǒ dānshēn de", khmer: "ខ្ញុំនៅលីវទេ។" },
+        { role: "老板 (ថៅកែ)", speaker: "boss", chinese: "你家有几口人？", pinyin: "Nǐ jiā yǒu jǐ kǒu rén?", khmer: "តើគ្រួសារអ្នកមានសមាជិកប៉ុន្មាននាក់?" },
+        { role: "面试员 (បេក្ខជន)", speaker: "applicant", chinese: "我家有5口人的。", pinyin: "Wǒjiā yǒu 5 kǒu rén de.", khmer: "គ្រួសារខ្ញុំមានសមាជិក ៥ នាក់។" },
+        { role: "老板 (ថៅកែ)", speaker: "boss", chinese: "从你家到工厂远不远", pinyin: "Cóng nǐ jiā dào gōngchǎng yuǎn bù yuǎn", khmer: "ពីផ្ទះអ្នកមកដល់រោងចក្រ ឆ្ងាយឬអត់?" },
+        { role: "面试员 (បេក្ខជន)", speaker: "applicant", chinese: "不远的， 从工厂到我家8分钟", pinyin: "Bù yuǎn de, cóng gōngchǎng dào wǒjiā 8 fēnzhōng", khmer: "មិនឆ្ងាយទេ ពីរោងចក្រទៅផ្ទះខ្ញុំចំណាយពេល 8 នាទី។" },
+        { role: "老板 (ថៅកែ)", speaker: "boss", chinese: "你中文有水平， 你懂电脑吗？", pinyin: "Nǐ zhōngwén yǒu shuǐpíng, nǐ dǒng diànnǎo ma?", khmer: "ភាសាចិនរបស់អ្នកល្អគួរសម តើអ្នកចេះកុំព្យូទ័រទេ?" },
+        { role: "面试员 (បេក្ខជន)", speaker: "applicant", chinese: "我电脑可以用的。", pinyin: "Wǒ diànnǎo kěyǐ yòng de.", khmer: "ខ្ញុំអាចប្រើកុំព្យូទ័របាន។" },
+        { role: "老板 (ថៅកែ)", speaker: "boss", chinese: "很好。你会用Excel吗？", pinyin: "Hěn hǎo. Nǐ huì yòng Excel ma?", khmer: "ល្អណាស់។ តើអ្នកចេះប្រើ Excel ទេ?" },
+        { role: "面试员 (បេក្ខជន)", speaker: "applicant", chinese: "我会用，而且很熟练。", pinyin: "Wǒ huì yòng, érqiě hěn shúliàn.", khmer: "ខ្ញុំចេះប្រើ ហើយស្ទាត់ជំនាញទៀតផង។" },
+        { role: "老板 (ថៅកែ)", speaker: "boss", chinese: "我们工厂有时候需要加班，你可以吗？", pinyin: "Wǒmen gōngchǎng yǒushíhòu xūyào jiābān, nǐ kěyǐ ma?", khmer: "រោងចក្រយើងជួនកាលត្រូវការថែមម៉ោង តើអ្នកអាចធ្វើបានទេ?" },
+        { role: "面试员 (បេក្ខជន)", speaker: "applicant", chinese: "没问题，我可以加班。", pinyin: "Méi wèntí, wǒ kěyǐ jiābān.", khmer: "គ្មានបញ្ហាទេ ខ្ញុំអាចថែមម៉ោងបាន។" },
+        { role: "老板 (ថៅកែ)", speaker: "boss", chinese: "好的， 你希望工资多少？", pinyin: "Hǎo de, nǐ xīwàng gōngzī duōshǎo?", khmer: "ល្អ ចុះអ្នកសង្ឃឹមថានឹងទទួលបានប្រាក់ខែប៉ុន្មានដែរ?" },
+        { role: "面试员 (បេក្ខជន)", speaker: "applicant", chinese: "那！我以前工资650了， 你可以给我多一点吗？", pinyin: "Nà! Wǒ yǐqián gōngzī 650 le, nǐ kěyǐ gěi wǒ duō yīdiǎn ma?", khmer: "ពីមុនប្រាក់ខែខ្ញុំ ៦៥០ ដុល្លារ តើលោកអាចឱ្យខ្ញុំច្រើនជាងនេះបន្តិចបានទេ?" },
+        { role: "老板 (ថៅកែ)", speaker: "boss", chinese: "好！我可以给你600块， 3个月后如你工作很好,我加给你， 好不好？", pinyin: "Hǎo! Wǒ kěyǐ gěi nǐ 600 kuài, 3 gè yuè hòu rú nǐ gōngzuò hěn hǎo, wǒ jiā gěi nǐ, hǎobù hǎo?", khmer: "ល្អ! ខ្ញុំអាចឱ្យអ្នក ៦០០ ដុល្លារសិន ប្រសិនបើ ៣ខែក្រោយអ្នកធ្វើការបានល្អ ខ្ញុំនឹងដំឡើងឱ្យអ្នក យល់ព្រមទេ?" },
+        { role: "面试员 (បេក្ខជន)", speaker: "applicant", chinese: "请问，工厂包吃住吗？", pinyin: "Qǐngwèn, gōngchǎng bāo chī zhù ma?", khmer: "សូមសួរមួយ តើរោងចក្រមានផ្តល់កន្លែងស្នាក់នៅ និងហូបចុកទេ?" },
+        { role: "老板 (ថៅកែ)", speaker: "boss", chinese: "包一顿午餐，不包住。", pinyin: "Bāo yī dùn wǔcān, bù bāo zhù.", khmer: "ផ្តល់អាហារថ្ងៃត្រង់មួយពេល តែមិនផ្តល់កន្លែងស្នាក់នៅទេ។" },
+        { role: "面试员 (បេក្ខជន)", speaker: "applicant", chinese: "我考虑一下", pinyin: "Wǒ kǎolù yīxià", khmer: "ខ្ញុំសូមពិចារណាសិន។" },
+        { role: "老板 (ថៅកែ)", speaker: "boss", chinese: "你先考虑一下吧", pinyin: "Nǐ xiān kǎolù yīxià ba", khmer: "យកទៅពិចារណាសិនចុះ។" },
+        { role: "面试员 (បេក្ខជន)", speaker: "applicant", chinese: "我先回家可以吗， 如果可以的话我告诉你， 谢谢", pinyin: "Wǒ xiān huí jiā kěyǐ ma, rúguǒ kěyǐ dehuà wǒ gàosù nǐ, xièxiè", khmer: "ខ្ញុំសុំត្រលប់ទៅផ្ទះសិនបានទេ ប្រសិនបើអាច ខ្ញុំនឹងប្រាប់លោកវិញ សូមអរគុណ។" },
+        { role: "老板 (ថៅកែ)", speaker: "boss", chinese: "好的，如果你决定了，明天可以来上班吗？", pinyin: "Hǎo de, rúguǒ nǐ juédìng le, míngtiān kěyǐ lái shàngbān ma?", khmer: "យល់ព្រម ប្រសិនបើអ្នកសម្រេចចិត្តហើយ ថ្ងៃស្អែកអាចមកធ្វើការបានទេ?" },
+        { role: "面试员 (បេក្ខជន)", speaker: "applicant", chinese: "如果我决定来，我明天早上8点准时到。", pinyin: "Rúguǒ wǒ juédìng lái, wǒ míngtiān zǎoshang 8 diǎn zhǔnshí dào.", khmer: "ប្រសិនបើខ្ញុំសម្រេចចិត្តមកធ្វើការ ខ្ញុំនឹងមកដល់ម៉ោង ៨ ព្រឹកស្អែកឱ្យបានទៀងទាត់។" },
+        { role: "老板 (ថៅកែ)", speaker: "boss", chinese: "好的！再见", pinyin: "Hǎo de! Zàijiàn", khmer: "យល់ព្រម! លាហើយ។" },
+        { role: "面试员 (បេក្ខជន)", speaker: "applicant", chinese: "谢谢！再见老板！", pinyin: "Xièxiè! Zàijiàn lǎobǎn!", khmer: "សូមអរគុណ! លាហើយថៅកែ!" }
+    ];
+
+    let conversationData = [];
+
+    function loadData() {
+        const stored = localStorage.getItem(STORAGE_KEY);
+        if (stored) {
+            try {
+                conversationData = JSON.parse(stored);
+            } catch (e) {
+                console.error("Error parsing local storage", e);
+                conversationData = JSON.parse(JSON.stringify(defaultConversationData));
+            }
+        } else {
+            conversationData = JSON.parse(JSON.stringify(defaultConversationData));
+            saveData();
+        }
+    }
+
+    function saveData() {
+        const dataToSave = conversationData.map(item => {
+            // Exclude cached url and promises from localStorage to save space
+            const { cachedAudioUrl, audioPromise, ...rest } = item;
+            return rest;
+        });
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(dataToSave));
+    }
+
+    function resetToDefault() {
+        if(confirm("តើអ្នកពិតជាចង់លុបទិន្នន័យកែប្រែថ្មី ហើយត្រឡប់ទៅទិន្នន័យដើមវិញមែនទេ?")) {
+            localStorage.removeItem(STORAGE_KEY);
+            loadData();
+            renderConversation();
+            showToast("បានត្រឡប់ទៅទិន្នន័យដើមវិញជោគជ័យ!", "success");
+        }
+    }
+
+    // --- Audio Variables & State ---
+    let globalAudio = null;
+    let isPlayingAll = false;
+    let shouldStopAll = false;
+    let isSlowMode = false;
+
+    function showToast(message, type = "error") {
+        const toast = document.createElement('div');
+        const bg = type === 'success' ? 'bg-emerald-600' : (type === 'info' ? 'bg-blue-500' : 'bg-red-500');
+        toast.className = `fixed top-6 right-6 ${bg} text-white px-6 py-4 rounded-xl shadow-2xl z-50 text-sm font-bold tracking-wide transition-all duration-300 transform translate-y-[-150%] opacity-0 flex items-center gap-3`;
+        
+        let icon = "fa-info-circle";
+        if(type === 'success') icon = "fa-check-circle";
+        if(type === 'error') icon = "fa-exclamation-triangle";
+
+        toast.innerHTML = `<i class="fas ${icon} text-xl"></i> ${message}`;
+        document.body.appendChild(toast);
+        
+        setTimeout(() => { toast.classList.remove('translate-y-[-150%]', 'opacity-0'); }, 10);
+        setTimeout(() => {
+            toast.classList.add('opacity-0', 'translate-y-[-150%]');
+            setTimeout(() => toast.remove(), 300);
+        }, 3000);
+    }
+
+    function base64ToArrayBuffer(base64) {
+        const binaryString = window.atob(base64);
+        const len = binaryString.length;
+        const bytes = new Uint8Array(len);
+        for (let i = 0; i < len; i++) { bytes[i] = binaryString.charCodeAt(i); }
+        return bytes.buffer;
+    }
+
+    function pcmToWav(pcmData, sampleRate) {
+        const numChannels = 1;
+        const bitsPerSample = 16;
+        const byteRate = sampleRate * numChannels * (bitsPerSample / 8);
+        const blockAlign = numChannels * (bitsPerSample / 8);
+        const dataSize = pcmData.length * (bitsPerSample / 8);
+        const chunkSize = 36 + dataSize;
+        const buffer = new ArrayBuffer(44 + dataSize);
+        const view = new DataView(buffer);
+
+        function writeString(view, offset, string) {
+            for (let i = 0; i < string.length; i++) { view.setUint8(offset + i, string.charCodeAt(i)); }
+        }
+
+        writeString(view, 0, 'RIFF'); view.setUint32(4, chunkSize, true); writeString(view, 8, 'WAVE');
+        writeString(view, 12, 'fmt '); view.setUint32(16, 16, true); view.setUint16(20, 1, true);
+        view.setUint16(22, numChannels, true); view.setUint32(24, sampleRate, true);
+        view.setUint32(28, byteRate, true); view.setUint16(32, blockAlign, true);
+        view.setUint16(34, bitsPerSample, true); writeString(view, 36, 'data');
+        view.setUint32(40, dataSize, true);
+
+        const dataView = new Int16Array(buffer, 44);
+        for (let i = 0; i < pcmData.length; i++) { dataView[i] = pcmData[i]; }
+        return new Blob([buffer], { type: 'audio/wav' });
+    }
+
+    async function generateTTSAudioUrl(text, speaker) {
+        const apiKey = ""; 
+        // ប្រើ Fenrir ដែលជាសំឡេងមនុស្សប្រុសច្បាស់និងមានលក្ខណៈធម្មជាតិសម្រាប់បេក្ខជន
+        const voiceName = speaker === 'boss' ? 'Orus' : 'Fenrir'; 
+        const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-tts:generateContent?key=${apiKey}`;
+        const promptText = `Speak this Chinese text clearly and naturally: ${text}`;
+
+        const payload = {
+            contents: [{ parts: [{ text: promptText }] }],
+            generationConfig: {
+                responseModalities: ["AUDIO"],
+                speechConfig: { voiceConfig: { prebuiltVoiceConfig: { voiceName: voiceName } } }
+            },
+            model: "gemini-2.5-flash-preview-tts"
+        };
+
+        const delays = [1000, 2000, 4000, 8000];
+        let result = null;
+        let lastError = null;
+
+        for (let i = 0; i < 4; i++) {
+            try {
+                const response = await fetch(apiUrl, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+                if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+                const json = await response.json();
+                if (json?.candidates?.[0]?.content?.parts?.some(p => p.inlineData && p.inlineData.data)) {
+                    result = json; break;
+                } else {
+                    throw new Error("Invalid response format");
+                }
+            } catch (error) {
+                lastError = error;
+                if (i < 3) await new Promise(r => setTimeout(r, delays[i]));
+            }
+        }
+
+        if (!result) throw lastError || new Error("Failed to generate audio.");
+
+        const part = result.candidates[0].content.parts.find(p => p.inlineData && p.inlineData.data);
+        const mimeType = part.inlineData.mimeType || "audio/L16;rate=24000";
+        const sampleRateMatch = mimeType.match(/rate=(\d+)/);
+        const sampleRate = sampleRateMatch ? parseInt(sampleRateMatch[1], 10) : 24000; 
+        
+        const pcmBuffer = base64ToArrayBuffer(part.inlineData.data);
+        const wavBlob = pcmToWav(new Int16Array(pcmBuffer), sampleRate);
+        return URL.createObjectURL(wavBlob);
+    }
+
+    // --- មុខងារទាញយកសំឡេងទុកមុនឆ្លាតវៃ (Smart Preloading) ---
+    function getAudioUrl(index) {
+        const item = conversationData[index];
+        // បើមាន URL ហើយ យកមកប្រើភ្លាម
+        if (item.cachedAudioUrl) return Promise.resolve(item.cachedAudioUrl);
+        
+        // បើកំពុងទាញយក (ជាន់គ្នាជាមួយអ្នកចុច) អោយរង់ចាំ Promise ចាស់
+        if (!item.audioPromise) {
+            item.audioPromise = generateTTSAudioUrl(item.chinese, item.speaker).then(url => {
+                item.cachedAudioUrl = url;
+                return url;
+            }).catch(err => {
+                item.audioPromise = null; // រីសិតបើមាន Error
+                throw err;
+            });
+        }
+        return item.audioPromise;
+    }
+
+    async function preloadAudioInBackground() {
+        // ទាញយកសំឡេងពីដើមដល់ចប់ដោយស្ងាត់ៗ (Background Process)
+        for (let i = 0; i < conversationData.length; i++) {
+            try {
+                await getAudioUrl(i);
+                // សម្រាក 0.6 វិនាទី ដើម្បីការពារកុំឱ្យដាច់ API (Rate Limit)
+                await new Promise(r => setTimeout(r, 600)); 
+            } catch (e) {
+                console.warn(`Preloading failed for item ${i}`);
+            }
+        }
+    }
+
+    async function playConversationItem(index) {
+        const item = conversationData[index];
+        const msgBubble = document.getElementById(`msg-${index}`);
+        const playBtn = document.getElementById(`play-btn-${index}`);
+        if(!playBtn) return false;
+        
+        const iconElement = playBtn.querySelector('i');
+        const textElement = playBtn.querySelector('span');
+        const originalIconClass = 'fas fa-play';
+
+        if (globalAudio) {
+            globalAudio.pause();
+            globalAudio.currentTime = 0;
+        }
+
+        // Remove active states from all
+        document.querySelectorAll('.message').forEach(el => {
+            el.classList.remove('ring-4', 'ring-indigo-400/50', 'scale-[1.01]', 'z-10', 'shadow-2xl');
+        });
+        
+        // Add active state to current
+        msgBubble.classList.add('ring-4', 'ring-indigo-400/50', 'scale-[1.01]', 'z-10', 'shadow-2xl');
+        msgBubble.scrollIntoView({ behavior: 'smooth', block: 'center' });
+
+        iconElement.className = 'fas fa-spinner fa-spin';
+        if(textElement) textElement.innerText = "កំពុងទាញយក...";
+
+        try {
+            // ប្រើប្រាស់មុខងារថ្មីដើម្បីចាប់យកសំឡេង (លឿនជាងមុនព្រោះបាន Preload)
+            const audioUrl = await getAudioUrl(index);
+            
+            if (shouldStopAll && isPlayingAll) return false;
+
+            return new Promise((resolve) => {
+                globalAudio = new Audio(audioUrl);
+                globalAudio.playbackRate = isSlowMode ? 0.75 : 1.0;
+                iconElement.className = 'fas fa-volume-up text-indigo-600 animate-pulse';
+                if(textElement) textElement.innerText = "កំពុងអាន...";
+
+                globalAudio.onended = () => {
+                    iconElement.className = originalIconClass;
+                    if(textElement) textElement.innerText = "ស្តាប់";
+                    msgBubble.classList.remove('ring-4', 'ring-indigo-400/50', 'scale-[1.01]', 'z-10', 'shadow-2xl');
+                    resolve(true);
+                };
+                globalAudio.onerror = () => {
+                    iconElement.className = originalIconClass;
+                    if(textElement) textElement.innerText = "ស្តាប់";
+                    msgBubble.classList.remove('ring-4', 'ring-indigo-400/50', 'scale-[1.01]', 'z-10', 'shadow-2xl');
+                    resolve(false);
+                };
+                globalAudio.play().catch(e => resolve(false));
+            });
+        } catch (error) {
+            iconElement.className = originalIconClass;
+            if(textElement) textElement.innerText = "ស្តាប់";
+            msgBubble.classList.remove('ring-4', 'ring-indigo-400/50', 'scale-[1.01]', 'z-10', 'shadow-2xl');
+            if(!isPlayingAll) showToast("សុំទោស មានបញ្ហាក្នុងការទាញយកសំឡេង សូមព្យាយាមម្តងទៀត។", "error");
+            return false;
+        }
+    }
+
+    async function handleManualPlay(index) {
+        if (isPlayingAll) stopPlayAll();
+        await playConversationItem(index);
+    }
+
+    async function startPlayAll() {
+        isPlayingAll = true; shouldStopAll = false;
+        const btn = document.getElementById('playAllBtn');
+        btn.classList.replace('from-indigo-600', 'from-red-500');
+        btn.classList.replace('to-blue-600', 'to-red-600');
+        btn.classList.replace('hover:from-indigo-700', 'hover:from-red-600');
+        btn.classList.replace('hover:to-blue-700', 'hover:to-red-700');
+        btn.classList.replace('border-indigo-500/30', 'border-red-500/30');
+        btn.innerHTML = `<i class="fas fa-stop text-2xl md:text-xl"></i> <span class="hidden md:inline font-extrabold text-lg tracking-wide" id="playAllText">បញ្ឈប់ការស្តាប់</span>`;
+
+        for (let i = 0; i < conversationData.length; i++) {
+            if (shouldStopAll) break;
+            await playConversationItem(i);
+            if (shouldStopAll) break;
+            await new Promise(res => setTimeout(res, 800));
+        }
+        stopPlayAll();
+    }
+
+    function stopPlayAll() {
+        isPlayingAll = false; shouldStopAll = true;
+        if (globalAudio) globalAudio.pause();
+        
+        document.querySelectorAll('.message').forEach(el => el.classList.remove('ring-4', 'ring-indigo-400/50', 'scale-[1.01]', 'z-10', 'shadow-2xl'));
+        
+        // Reset all play buttons
+        renderConversation(); // Easiest way to reset the UI buttons securely
+
+        const btn = document.getElementById('playAllBtn');
+        btn.classList.replace('from-red-500', 'from-indigo-600');
+        btn.classList.replace('to-red-600', 'to-blue-600');
+        btn.classList.replace('hover:from-red-600', 'hover:from-indigo-700');
+        btn.classList.replace('hover:to-red-700', 'hover:to-blue-700');
+        btn.classList.replace('border-red-500/30', 'border-indigo-500/30');
+        btn.innerHTML = `<i class="fas fa-play text-2xl md:text-xl ml-1 md:ml-0"></i> <span class="hidden md:inline font-extrabold text-lg tracking-wide" id="playAllText">ស្តាប់ពីដើមដល់ចប់</span>`;
+    }
+
+    function togglePlayAll() {
+        if (isPlayingAll) stopPlayAll(); else startPlayAll();
+    }
+
+    function toggleSlowMode() {
+        isSlowMode = !isSlowMode;
+        const btn = document.getElementById('slowModeToggleBtn');
+        const text = document.getElementById('slowModeText');
+        
+        if(isSlowMode) {
+            btn.classList.replace('bg-white', 'bg-amber-100');
+            btn.classList.replace('text-indigo-600', 'text-amber-700');
+            btn.classList.replace('border-indigo-100', 'border-amber-300');
+            text.innerText = "កំពុងអានយឺត";
+        } else {
+            btn.classList.replace('bg-amber-100', 'bg-white');
+            btn.classList.replace('text-amber-700', 'text-indigo-600');
+            btn.classList.replace('border-amber-300', 'border-indigo-100');
+            text.innerText = "ល្បឿនធម្មតា";
+        }
+        
+        if(globalAudio && !globalAudio.paused) {
+            globalAudio.playbackRate = isSlowMode ? 0.75 : 1.0;
+        }
+    }
+
+    // --- Modal & Editing Functions ---
+    function openModal(index) {
+        const modal = document.getElementById('editModal');
+        const content = document.getElementById('modalContent');
+        const title = document.getElementById('modalTitle');
+        const statusSpan = document.getElementById('autoTranslateStatus');
+        
+        document.getElementById('editIndex').value = index;
+        if(statusSpan) statusSpan.innerHTML = ''; 
+        
+        if(index === -1) {
+            title.innerHTML = '<i class="fas fa-plus-circle text-emerald-500"></i> បន្ថែមប្រយោគថ្មី';
+            document.getElementById('inputSpeaker').value = 'boss';
+            document.getElementById('inputKhmer').value = '';
+            document.getElementById('inputChinese').value = '';
+            document.getElementById('inputPinyin').value = '';
+        } else {
+            title.innerHTML = '<i class="fas fa-edit text-indigo-500"></i> កែប្រែប្រយោគ';
+            const item = conversationData[index];
+            document.getElementById('inputSpeaker').value = item.speaker;
+            document.getElementById('inputKhmer').value = item.khmer;
+            document.getElementById('inputChinese').value = item.chinese;
+            document.getElementById('inputPinyin').value = item.pinyin;
+        }
+
+        modal.classList.remove('hidden');
+        void modal.offsetWidth; 
+        modal.classList.remove('opacity-0');
+        content.classList.remove('scale-95');
+    }
+
+    function closeModal() {
+        const modal = document.getElementById('editModal');
+        const content = document.getElementById('modalContent');
+        
+        modal.classList.add('opacity-0');
+        content.classList.add('scale-95');
+        
+        setTimeout(() => {
+            modal.classList.add('hidden');
+        }, 300);
+    }
+
+    function saveModal() {
+        const index = parseInt(document.getElementById('editIndex').value);
+        const speaker = document.getElementById('inputSpeaker').value;
+        const khmer = document.getElementById('inputKhmer').value.trim();
+        const chinese = document.getElementById('inputChinese').value.trim();
+        const pinyin = document.getElementById('inputPinyin').value.trim();
+
+        if(!khmer || !chinese || !pinyin) {
+            alert("សូមបំពេញចន្លោះទាំងអស់ (ខ្មែរ, ចិន, Pinyin) ឬប្រើប៊ូតុងបកប្រែស្វ័យប្រវត្តិ។");
+            return;
+        }
+
+        const newItem = {
+            role: speaker === 'boss' ? "老板 (ថៅកែ)" : "面试员 (បេក្ខជន)",
+            speaker: speaker,
+            chinese: chinese,
+            pinyin: pinyin,
+            khmer: khmer
+        };
+
+        if(index === -1) {
+            conversationData.push(newItem);
+            showToast("បានបន្ថែមប្រយោគថ្មីជោគជ័យ!", "success");
+        } else {
+            if(conversationData[index].chinese === chinese && conversationData[index].speaker === speaker) {
+                newItem.cachedAudioUrl = conversationData[index].cachedAudioUrl;
+            }
+            conversationData[index] = newItem;
+            showToast("បានកែប្រែជោគជ័យ!", "success");
+        }
+
+        saveData();
+        renderConversation();
+        closeModal();
+    }
+
+    function deleteItem(index) {
+        if(confirm("តើអ្នកពិតជាចង់លុបប្រយោគនេះមែនទេ?")) {
+            conversationData.splice(index, 1);
+            saveData();
+            renderConversation();
+            showToast("បានលុបជោគជ័យ!", "info");
+        }
+    }
+
+    async function autoFill(sourceLang, isAutoTyping = false) {
+        const khInput = document.getElementById('inputKhmer');
+        const zhInput = document.getElementById('inputChinese');
+        const pyInput = document.getElementById('inputPinyin');
+        const statusSpan = document.getElementById('autoTranslateStatus');
+        const btnKh = document.querySelector(`button[onclick="autoFill('kh')"]`);
+        const btnZh = document.querySelector(`button[onclick="autoFill('zh')"]`);
+
+        let textToTranslate = "";
+        
+        if(sourceLang === 'kh') {
+            textToTranslate = khInput.value.trim();
+            if(!textToTranslate) {
+                if(!isAutoTyping) alert("សូមវាយអក្សរខ្មែរជាមុនសិន!");
+                return;
+            }
+            if(!isAutoTyping) btnKh.innerHTML = '<i class="fas fa-spinner fa-spin"></i> កំពុងបកប្រែ...';
+        } else {
+            textToTranslate = zhInput.value.trim();
+            if(!textToTranslate) {
+                if(!isAutoTyping) alert("សូមវាយអក្សរចិនជាមុនសិន!");
+                return;
+            }
+            if(!isAutoTyping) btnZh.innerHTML = '<i class="fas fa-spinner fa-spin"></i> កំពុងបកប្រែ...';
+        }
+
+        if(statusSpan) statusSpan.innerHTML = '<i class="fas fa-spinner fa-spin text-indigo-500"></i> <span class="text-indigo-600">កំពុងបកប្រែ...</span>';
+
+        const apiKey = ""; 
+        const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${apiKey}`;
+        
+        let prompt = `You are a helpful translation assistant. `;
+        if (sourceLang === 'zh') {
+            prompt += `Translate this Chinese text to natural conversational Khmer and provide accurate Pinyin. Text: "${textToTranslate}"`;
+        } else {
+            prompt += `Translate this conversational Khmer text to natural Simplified Chinese and provide accurate Pinyin. Text: "${textToTranslate}"`;
+        }
+
+        const payload = {
+            contents: [{ parts: [{ text: prompt }] }],
+            generationConfig: {
+                responseMimeType: "application/json",
+                responseSchema: {
+                    type: "OBJECT",
+                    properties: {
+                        chinese: { type: "STRING" },
+                        pinyin: { type: "STRING" },
+                        khmer: { type: "STRING" }
+                    },
+                    required: ["chinese", "pinyin", "khmer"]
+                }
+            }
+        };
+
+        try {
+            const response = await fetch(apiUrl, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            });
+
+            if(!response.ok) throw new Error("API Error");
+            
+            const result = await response.json();
+            const jsonText = result.candidates[0].content.parts[0].text;
+            const parsed = JSON.parse(jsonText);
+
+            if(sourceLang === 'kh') {
+                zhInput.value = parsed.chinese;
+                pyInput.value = parsed.pinyin;
+            } else {
+                khInput.value = parsed.khmer;
+                pyInput.value = parsed.pinyin;
+            }
+            
+            if(statusSpan) statusSpan.innerHTML = '<i class="fas fa-check-circle text-emerald-500"></i> <span class="text-emerald-600">រួចរាល់</span>';
+            if(!isAutoTyping) showToast("ការបកប្រែទទួលបានជោគជ័យ", "success");
+
+        } catch(e) {
+            console.error(e);
+            if(statusSpan) statusSpan.innerHTML = '<i class="fas fa-exclamation-triangle text-red-500"></i> <span class="text-red-500">បរាជ័យ</span>';
+            if(!isAutoTyping) alert("សូមអភ័យទោស មានបញ្ហាក្នុងការបកប្រែ សូមព្យាយាមម្តងទៀត។");
+        } finally {
+            if(!isAutoTyping) {
+                btnKh.innerHTML = '<i class="fas fa-language"></i> ខ្មែរ ➡️ ចិន';
+                btnZh.innerHTML = '<i class="fas fa-language"></i> ចិន ➡️ ខ្មែរ';
+            }
+        }
+    }
+
+    // --- Render ---
+    function renderConversation() {
+        const listContainer = document.getElementById('conversation-list');
+        listContainer.innerHTML = ''; 
+
+        conversationData.forEach((item, index) => {
+            const isBoss = item.speaker === 'boss';
+            
+            // Design Variables based on Speaker
+            const alignmentClass = isBoss ? 'flex-row' : 'flex-row-reverse';
+            const cardBgClass = isBoss ? 'bg-gradient-to-br from-[#f0f7ff] to-white border-[#dbeafe]' : 'bg-gradient-to-br from-[#f0fdf4] to-white border-[#dcfce7]';
+            const avatarGradient = isBoss ? 'bg-gradient-to-br from-blue-500 to-indigo-600' : 'bg-gradient-to-br from-emerald-500 to-teal-600';
+            const iconClass = isBoss ? 'fa-user-tie text-white' : 'fa-user text-white';
+            const roleColor = isBoss ? 'text-blue-700' : 'text-emerald-700';
+            const playBtnClass = isBoss ? 'bg-white border-blue-200 text-blue-600 hover:bg-blue-50 hover:border-blue-300' : 'bg-white border-emerald-200 text-emerald-600 hover:bg-emerald-50 hover:border-emerald-300';
+            const bubbleShape = isBoss ? 'rounded-[1.5rem] rounded-tl-sm' : 'rounded-[1.5rem] rounded-tr-sm';
+
+            const messageHTML = `
+                <div class="flex items-start gap-3 md:gap-5 ${alignmentClass} relative group">
+                    <!-- Avatar -->
+                    <div class="flex-shrink-0 mt-1">
+                        <div class="w-12 h-12 md:w-14 md:h-14 rounded-full ${avatarGradient} flex items-center justify-center shadow-lg transform transition-transform duration-300 group-hover:scale-110 group-hover:shadow-xl border-2 border-white">
+                            <i class="fas ${iconClass} text-xl md:text-2xl drop-shadow-sm"></i>
+                        </div>
+                    </div>
+
+                    <!-- Message Bubble Card -->
+                    <div id="msg-${index}" class="message ${cardBgClass} border shadow-sm hover:shadow-md flex-1 max-w-[90%] md:max-w-[85%] relative transition-all duration-300 ${bubbleShape} overflow-hidden">
+                        
+                        <div class="p-5 md:p-6">
+                            <!-- Header Row -->
+                            <div class="flex justify-between items-center mb-5">
+                                <div class="flex items-center gap-3">
+                                    <span class="font-bold ${roleColor} text-sm md:text-base tracking-wider uppercase flex items-center gap-2">
+                                        ${item.role}
+                                    </span>
+                                    
+                                    <!-- Edit/Delete Actions -->
+                                    <div class="flex gap-1.5 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                                        <button onclick="openModal(${index})" class="text-slate-400 hover:text-indigo-600 bg-white rounded-full w-8 h-8 flex items-center justify-center shadow-sm border border-slate-100 transition-all hover:scale-110" title="កែប្រែ">
+                                            <i class="fas fa-pen text-xs"></i>
+                                        </button>
+                                        <button onclick="deleteItem(${index})" class="text-slate-400 hover:text-red-500 bg-white rounded-full w-8 h-8 flex items-center justify-center shadow-sm border border-slate-100 transition-all hover:scale-110" title="លុប">
+                                            <i class="fas fa-trash text-xs"></i>
+                                        </button>
+                                    </div>
+                                </div>
+                                
+                                <!-- Play Button -->
+                                <button 
+                                    id="play-btn-${index}"
+                                    onclick="handleManualPlay(${index})" 
+                                    class="flex items-center gap-2 px-4 py-2 rounded-full text-sm font-bold transition-all duration-300 border shadow-sm hover:shadow-md transform hover:-translate-y-0.5 ${playBtnClass}"
+                                    title="ស្តាប់សំឡេង / Listen"
+                                >
+                                    <i class="fas fa-play"></i> <span class="hidden sm:inline">ស្តាប់</span>
+                                </button>
+                            </div>
+
+                            <!-- Text Content -->
+                            <div class="space-y-4">
+                                <div>
+                                    <p class="text-lg md:text-xl font-bold text-slate-800 leading-relaxed">${item.khmer}</p>
+                                </div>
+                                
+                                <!-- Divider -->
+                                <div class="h-px w-full bg-gradient-to-r from-transparent via-slate-200 to-transparent opacity-60 my-2"></div>
+                                
+                                <div>
+                                    <p class="text-xl md:text-[22px] font-medium text-slate-700 tracking-wide font-sans">${item.chinese}</p>
+                                </div>
+                                
+                                <div class="pt-1">
+                                    <span class="inline-block bg-slate-50/80 border border-slate-200/60 px-3 py-1.5 rounded-lg text-sm md:text-[15px] text-slate-500 font-mono font-medium shadow-sm backdrop-blur-sm">
+                                        ${item.pinyin}
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+            listContainer.insertAdjacentHTML('beforeend', messageHTML);
+        });
+        
+        if(conversationData.length === 0) {
+            listContainer.innerHTML = `
+                <div class="text-center py-16 px-4">
+                    <div class="inline-flex items-center justify-center w-20 h-20 rounded-full bg-slate-100 text-slate-300 mb-4">
+                        <i class="fas fa-comment-slash text-4xl"></i>
+                    </div>
+                    <h3 class="text-xl font-bold text-slate-600 mb-2">មិនមានទិន្នន័យទេ</h3>
+                    <p class="text-slate-500 mb-6">សូមចុចប៊ូតុង "បន្ថែមប្រយោគថ្មី" ដើម្បីចាប់ផ្តើម ឬ "ត្រឡប់ទៅទិន្នន័យដើម"។</p>
+                </div>
+            `;
+        }
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+        loadData();
+        renderConversation();
+
+        // ចាប់ផ្តើមទាញយកសំឡេងទុកមុន ១វិនាទី បន្ទាប់ពីបើកកម្មវិធីរួច
+        setTimeout(() => { preloadAudioInBackground(); }, 1000);
+
+        let typingTimer;
+        const doneTypingInterval = 1000; 
+        
+        const inputKh = document.getElementById('inputKhmer');
+        const inputZh = document.getElementById('inputChinese');
+        const inputPy = document.getElementById('inputPinyin');
+        const statusSpan = document.getElementById('autoTranslateStatus');
+
+        inputKh.addEventListener('input', () => {
+            clearTimeout(typingTimer);
+            const text = inputKh.value.trim();
+            if (text) {
+                statusSpan.innerHTML = '<i class="fas fa-spinner fa-spin text-indigo-400"></i> <span class="text-indigo-500">កំពុងរង់ចាំ...</span>';
+                typingTimer = setTimeout(() => { autoFill('kh', true); }, doneTypingInterval);
+            } else {
+                inputZh.value = ''; inputPy.value = ''; statusSpan.innerHTML = '';
+            }
+        });
+
+        inputZh.addEventListener('input', () => {
+            clearTimeout(typingTimer);
+            const text = inputZh.value.trim();
+            if (text) {
+                statusSpan.innerHTML = '<i class="fas fa-spinner fa-spin text-indigo-400"></i> <span class="text-indigo-500">កំពុងរង់ចាំ...</span>';
+                typingTimer = setTimeout(() => { autoFill('zh', true); }, doneTypingInterval);
+            } else {
+                inputKh.value = ''; inputPy.value = ''; statusSpan.innerHTML = '';
+            }
+        });
+    });
+
+</script>
+</body>
+</html>
